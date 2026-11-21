@@ -1,0 +1,166 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TotalEnergies business account",
+        "description": "Sign in with your pro.totalenergies.fr account. The password is tried once: if TotalEnergies refuses it, nothing is sent again until you submit this form again.",
+        "data": {
+          "username": "E-mail",
+          "password": "Password"
+        }
+      },
+      "points": {
+        "title": "Delivery points",
+        "description": "Select the delivery points (PRM for electricity, PCE for gas) to import. Terminated contracts can be kept for their history.",
+        "data": {
+          "points": "Delivery points"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in to TotalEnergies again",
+        "description": "TotalEnergies refused the stored credentials for {username}, and the integration stopped contacting TotalEnergies. First check that you can sign in on pro.totalenergies.fr, then enter the password. It is tried once.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "TotalEnergies refused these credentials. Check them on pro.totalenergies.fr before trying again: several refusals can lock the account.",
+      "cannot_connect": "TotalEnergies could not be reached or answered unexpectedly. The password was not refused; try again later.",
+      "blocked": "TotalEnergies' anti-bot protection blocked the request. Try again tomorrow.",
+      "no_point_selected": "Select at least one delivery point."
+    },
+    "abort": {
+      "already_configured": "This account is already configured.",
+      "no_points": "No delivery point is attached to this account.",
+      "reauth_successful": "Signed in; the integration resumes."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TotalEnergies options",
+        "data": {
+          "history_years": "History to import (raising it imports the older invoices)",
+          "fetch_hour": "Daily fetch hour (a random delay of up to 30 min is added)",
+          "spread": "Where billed amounts are placed",
+          "pdf_folder": "Folder for invoice PDFs (empty: download disabled), e.g. /media/totalenergies"
+        }
+      }
+    }
+  },
+  "selector": {
+    "spread": {
+      "options": {
+        "per_day": "Spread evenly over the days of the billing period",
+        "period_end": "On the last day of the billing period"
+      }
+    }
+  },
+  "issues": {
+    "auth_refused": {
+      "title": "TotalEnergies refused the sign-in for {title}",
+      "description": "TotalEnergies refused the stored credentials. To protect the account from being locked, the integration has stopped contacting TotalEnergies and will not try again by itself.\n\nCheck that you can sign in on pro.totalenergies.fr, then re-authenticate the integration from Settings → Devices & services."
+    },
+    "datadome_blocked": {
+      "title": "TotalEnergies is blocking {title}",
+      "description": "The anti-bot protection in front of TotalEnergies' API blocked the integration several days in a row. It waits a day after each block and never tries to work around it. If it persists, check that you can still use pro.totalenergies.fr from this network."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "last_invoice": {
+        "name": "Last invoice"
+      },
+      "last_invoice_date": {
+        "name": "Last invoice date"
+      },
+      "last_invoice_energy": {
+        "name": "Last invoice energy"
+      },
+      "average_price_excl_vat": {
+        "name": "Average price excl. VAT"
+      },
+      "average_price_incl_vat": {
+        "name": "Average price incl. VAT"
+      },
+      "energy_price": {
+        "name": "Energy price"
+      },
+      "invoiced_12_months": {
+        "name": "Invoiced over 12 months"
+      },
+      "contract_status": {
+        "name": "Contract status",
+        "state": {
+          "active": "Active",
+          "changing": "Being changed",
+          "terminating": "Being terminated",
+          "terminated": "Terminated",
+          "unknown": "Unknown"
+        }
+      },
+      "contract_start": {
+        "name": "Contract start"
+      },
+      "tariff": {
+        "name": "Network tariff"
+      },
+      "subscribed_power": {
+        "name": "Subscribed power"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Connection problem"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Refresh"
+      }
+    }
+  },
+  "services": {
+    "download_invoice": {
+      "name": "Download invoice",
+      "description": "Saves invoice PDFs to the folder set in the options. Existing files are never overwritten.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Account",
+          "description": "The TotalEnergies account (needed only when several are configured)."
+        },
+        "invoice": {
+          "name": "Invoice number",
+          "description": "Number of the invoice. Default: the last invoice of each delivery point."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "reauth_needed": {
+      "message": "TotalEnergies refused the credentials: re-authenticate the integration first. Nothing was sent."
+    },
+    "blocked": {
+      "message": "TotalEnergies' anti-bot protection blocked the integration: it waits until tomorrow. Nothing was sent."
+    },
+    "refresh_too_soon": {
+      "message": "TotalEnergies was contacted a few minutes ago. Wait before refreshing again."
+    },
+    "which_entry": {
+      "message": "Choose the TotalEnergies account (several are configured, or none is loaded)."
+    },
+    "pdf_disabled": {
+      "message": "Set a folder for invoice PDFs in the integration options first."
+    },
+    "folder_not_allowed": {
+      "message": "Home Assistant is not allowed to write to this folder (see allowlist_external_dirs; /media is allowed by default)."
+    },
+    "invalid_invoice": {
+      "message": "An invoice number has digits only."
+    },
+    "download_failed": {
+      "message": "The invoice could not be downloaded: {error}"
+    }
+  }
+}

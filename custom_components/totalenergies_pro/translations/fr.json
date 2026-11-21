@@ -1,0 +1,166 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Compte TotalEnergies entreprises",
+        "description": "Connectez-vous avec votre compte pro.totalenergies.fr. Le mot de passe est essayé une seule fois : si TotalEnergies le refuse, rien n'est renvoyé tant que vous ne validez pas de nouveau ce formulaire.",
+        "data": {
+          "username": "E-mail",
+          "password": "Mot de passe"
+        }
+      },
+      "points": {
+        "title": "Points de livraison",
+        "description": "Choisissez les points de livraison (PRM pour l'électricité, PCE pour le gaz) à importer. Un contrat résilié peut être gardé pour son historique.",
+        "data": {
+          "points": "Points de livraison"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Se reconnecter à TotalEnergies",
+        "description": "TotalEnergies a refusé les identifiants enregistrés pour {username}, et l'intégration a cessé de contacter TotalEnergies. Vérifiez d'abord que vous pouvez vous connecter sur pro.totalenergies.fr, puis saisissez le mot de passe. Il est essayé une seule fois.",
+        "data": {
+          "password": "Mot de passe"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "TotalEnergies a refusé ces identifiants. Vérifiez-les sur pro.totalenergies.fr avant de réessayer : plusieurs refus peuvent verrouiller le compte.",
+      "cannot_connect": "TotalEnergies est injoignable ou a répondu de façon inattendue. Le mot de passe n'a pas été refusé ; réessayez plus tard.",
+      "blocked": "La protection anti-robot de TotalEnergies a bloqué la demande. Réessayez demain.",
+      "no_point_selected": "Choisissez au moins un point de livraison."
+    },
+    "abort": {
+      "already_configured": "Ce compte est déjà configuré.",
+      "no_points": "Aucun point de livraison n'est rattaché à ce compte.",
+      "reauth_successful": "Connexion réussie ; l'intégration reprend."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options TotalEnergies",
+        "data": {
+          "history_years": "Historique à importer (l'augmenter importe les factures plus anciennes)",
+          "fetch_hour": "Heure de la récupération quotidienne (un délai aléatoire de 30 min au plus s'ajoute)",
+          "spread": "Placement des montants facturés",
+          "pdf_folder": "Dossier des factures PDF (vide : téléchargement désactivé), par exemple /media/totalenergies"
+        }
+      }
+    }
+  },
+  "selector": {
+    "spread": {
+      "options": {
+        "per_day": "Répartis également sur les jours de la période facturée",
+        "period_end": "Au dernier jour de la période facturée"
+      }
+    }
+  },
+  "issues": {
+    "auth_refused": {
+      "title": "TotalEnergies a refusé la connexion de {title}",
+      "description": "TotalEnergies a refusé les identifiants enregistrés. Pour ne pas verrouiller le compte, l'intégration a cessé de contacter TotalEnergies et ne réessaiera pas d'elle-même.\n\nVérifiez que vous pouvez vous connecter sur pro.totalenergies.fr, puis reconnectez l'intégration depuis Paramètres → Appareils et services."
+    },
+    "datadome_blocked": {
+      "title": "TotalEnergies bloque {title}",
+      "description": "La protection anti-robot placée devant l'API de TotalEnergies a bloqué l'intégration plusieurs jours de suite. Elle attend un jour après chaque blocage et ne cherche jamais à le contourner. Si cela continue, vérifiez que pro.totalenergies.fr reste utilisable depuis ce réseau."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "last_invoice": {
+        "name": "Dernière facture"
+      },
+      "last_invoice_date": {
+        "name": "Date de la dernière facture"
+      },
+      "last_invoice_energy": {
+        "name": "Énergie de la dernière facture"
+      },
+      "average_price_excl_vat": {
+        "name": "Prix moyen HT"
+      },
+      "average_price_incl_vat": {
+        "name": "Prix moyen TTC"
+      },
+      "energy_price": {
+        "name": "Prix de l'énergie"
+      },
+      "invoiced_12_months": {
+        "name": "Facturé sur 12 mois"
+      },
+      "contract_status": {
+        "name": "Statut du contrat",
+        "state": {
+          "active": "Actif",
+          "changing": "En cours de modification",
+          "terminating": "En cours de résiliation",
+          "terminated": "Résilié",
+          "unknown": "Inconnu"
+        }
+      },
+      "contract_start": {
+        "name": "Début du contrat"
+      },
+      "tariff": {
+        "name": "Tarif d'acheminement"
+      },
+      "subscribed_power": {
+        "name": "Puissance souscrite"
+      }
+    },
+    "binary_sensor": {
+      "problem": {
+        "name": "Problème de connexion"
+      }
+    },
+    "button": {
+      "refresh": {
+        "name": "Actualiser"
+      }
+    }
+  },
+  "services": {
+    "download_invoice": {
+      "name": "Télécharger une facture",
+      "description": "Enregistre des factures PDF dans le dossier choisi dans les options. Un fichier existant n'est jamais écrasé.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Compte",
+          "description": "Le compte TotalEnergies (seulement si plusieurs sont configurés)."
+        },
+        "invoice": {
+          "name": "Numéro de facture",
+          "description": "Numéro de la facture. Par défaut : la dernière facture de chaque point de livraison."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "reauth_needed": {
+      "message": "TotalEnergies a refusé les identifiants : reconnectez d'abord l'intégration. Rien n'a été envoyé."
+    },
+    "blocked": {
+      "message": "La protection anti-robot de TotalEnergies a bloqué l'intégration : elle attend jusqu'à demain. Rien n'a été envoyé."
+    },
+    "refresh_too_soon": {
+      "message": "TotalEnergies a été contacté il y a quelques minutes. Attendez avant d'actualiser de nouveau."
+    },
+    "which_entry": {
+      "message": "Choisissez le compte TotalEnergies (plusieurs sont configurés, ou aucun n'est chargé)."
+    },
+    "pdf_disabled": {
+      "message": "Choisissez d'abord un dossier pour les factures PDF dans les options de l'intégration."
+    },
+    "folder_not_allowed": {
+      "message": "Home Assistant n'a pas le droit d'écrire dans ce dossier (voir allowlist_external_dirs ; /media est autorisé par défaut)."
+    },
+    "invalid_invoice": {
+      "message": "Un numéro de facture ne contient que des chiffres."
+    },
+    "download_failed": {
+      "message": "La facture n'a pas pu être téléchargée : {error}"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "domain": "totalenergies_pro",
+  "name": "TotalEnergies Pro",
+  "codeowners": [
+    "@aghulas"
+  ],
+  "dependencies": [
+    "recorder"
+  ],
+  "documentation": "https://github.com/aghulas/ha-totalenergies",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/aghulas/ha-totalenergies/issues",
+  "requirements": [],
+  "version": "0.0.1"
+}

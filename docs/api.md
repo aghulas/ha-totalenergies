@@ -22,7 +22,7 @@ Source of truth: `~/dev/totalenergies-mcp/totalenergies_mcp/client.py`, `modeles
 | POST | `/refresh-token` | refreshToken | auth |
 | GET | `/web-methods/comptes` | — | billing accounts: `comptes[].compte.{numero, nom, segment, modeEnvoiFacture}` |
 | GET | `/web-methods/sites` | — | delivery points and contracts (see below) |
-| POST | `/web-methods/factures?` (**trailing `?` required**) | `{dateDebutPeriode, dateFinPeriode}` (YYYY-MM-DD, ≤ 12 months) | invoices |
+| POST | `/web-methods/factures?` (trailing `?` sent by the front and the MCP connector; aiohttp cannot send an empty query, the integration calls `/web-methods/factures` — to confirm live, `scripts/live_check.py`) | `{dateDebutPeriode, dateFinPeriode}` (YYYY-MM-DD, ≤ 12 months) | invoices |
 | POST | `/web-methods/consommations` | `{dateDebutRecherche, dateFinRecherche}` (≤ 12 months) | billed consumption lines |
 | GET | `/web-methods/download/facture/<numero>` | — | invoice PDF (`%PDF` bytes) |
 
@@ -49,6 +49,16 @@ none), isActif, isResilie, isEnCoursDeResiliation, fta, optionTarifaire, puissan
 puissanceHeuresPleinesHiver, puissanceHeuresCreusesHiver, puissanceHeuresPleinesEte,
 puissanceHeuresCreusesEte, puissanceSouscrite, poucentageEnergieVerte}`,
 `situationComptage.{matriculeCompteur, frequenceReleve}`.
+
+## Live validation of the HA client (21/11/2026, `scripts/live_check.py`)
+
+- `/web-methods/factures` **without** the trailing `?` works (aiohttp): 24 invoices over 12 months.
+- Login: id_token valid 60 min, refresh token returned.
+- `details.hasError` is `true` on a normal consumption search (the MCP connector gets the same, with
+  the same lines): record it, never treat it as a failed fetch.
+- `rang` and `calFou` / `libelleCalFou` come back empty in practice. Gas lines have no
+  `classeTemporelle`. One electricity invoice can carry two periods split at the 1st of January.
+- `statutContrat` `45` = active, `60` = terminated (with `dateResiliation` set).
 
 ## Known gaps
 

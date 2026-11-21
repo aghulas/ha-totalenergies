@@ -1,0 +1,10 @@
+download_invoice:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: totalenergies_pro
+    invoice:
+      example: "100000000001"
+      selector:
+        text:

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — 2026-11-22
+
+- Electricity network tariff taken from the invoice PDF when the list of delivery points is withheld:
+  the segment (C4…) as the state, the connection (BT > 36 kVA…) as an attribute. Invoices already
+  read are read again, a few per fetch.
+
 ## 0.2.1 — 2026-11-22
 
 - Invoice PDFs of the layout used since November 2026 read ("Consommation <time class>" lines): the
@@ -12,8 +18,8 @@
 ## 0.2.0 — 2026-11-22
 
 - **Invoice PDFs read**, in pure Python (pypdf in layout mode; on 26 real invoices the reading equals
-  the `pdftotext` one the MCP connector uses). One download per invoice, ever: the last 12 months are
-  read a few a day, then each new invoice. Option *Read the invoice PDFs* (on by default).
+  the `pdftotext` one the MCP connector uses). One download per invoice (again only when the reading changes): the
+  last 12 months are read a few a day, then each new invoice. Option *Read the invoice PDFs* (on by default).
 - New sensors: **price of one more kWh** excl. VAT (supply, capacity, energy savings certificates,
   network variable part, excise; per time class as attributes — an invoice billing two periods with
   two prices is handled), **maximum power reached** over 12 months (electricity: per class, subscribed

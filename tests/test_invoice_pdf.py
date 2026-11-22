@@ -23,6 +23,7 @@ from custom_components.totalenergies_pro.invoice_pdf import (
 ELEC = """
                                    Date de facture : 10/01/26
   Option tarifaire : Courte Utilisation          Segment : C4
+  Raccordement : BT > 36 kVA
 
   Energie active (HT)                                                        1 234,56 €
   Heures Pleines Hiver        25/12/25  31/12/25    700 kWh    0,12000 €/kWh     84,00 €   20 %
@@ -107,6 +108,8 @@ def test_electricity_lines_powers_and_references() -> None:
     assert p.references == {
         "invoice_date": date(2026, 1, 10),
         "tariff_option": "Courte Utilisation",
+        "segment": "C4",
+        "connection": "BT > 36 kVA",
     }
     first = p.lines[0]
     assert (first.section, first.label, first.quantity, first.unit) == (
@@ -138,7 +141,11 @@ def test_marginal_price_per_class_with_two_periods() -> None:
     assert d.kwh == 1500.0
     assert (d.period_start, d.period_end) == (date(2025, 12, 25), date(2026, 1, 24))
     assert d.invoice_date == date(2026, 1, 10)
-    assert d.references == {"tariff_option": "Courte Utilisation"}
+    assert d.references == {
+        "tariff_option": "Courte Utilisation",
+        "segment": "C4",
+        "connection": "BT > 36 kVA",
+    }
 
 
 def test_gas_references_and_price() -> None:

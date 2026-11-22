@@ -94,7 +94,9 @@ async def test_contract_sensors_fall_back_on_the_pdf(hass: HomeAssistant, te: Fa
     assert hass.states.get(_entity(hass, PCE, "tariff")).state == "T3"  # type: ignore[union-attr]
     elec = hass.states.get(_entity(hass, PRM, "tariff"))
     assert elec is not None
+    assert elec.state == "C4"
     assert elec.attributes["option"] == "Courte Utilisation"
+    assert elec.attributes["connection"] == "BT > 36 kVA"
     power = hass.states.get(_entity(hass, PRM, "subscribed_power"))
     assert power is not None
     assert power.state == "42.0"

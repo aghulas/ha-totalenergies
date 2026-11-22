@@ -69,6 +69,7 @@ from .const import (
     PDF_DAYS,
     PDF_MAX_FAILURES,
     PDF_PER_FETCH,
+    PDF_READER,
     REIMPORT_DAYS,
 )
 from .invoice_pdf import InvoiceDetail, read_invoice, summarize_details
@@ -473,9 +474,10 @@ class TotalEnergiesCoordinator(DataUpdateCoordinator[TotalEnergiesData]):
     ) -> None:
         """Read the PDFs of the last year's invoices not read yet, a few per fetch.
 
-        One download per invoice, ever (the result is kept); a PDF that cannot be read is tried
-        again at the next fetches, then left aside. A temporary error stops the reading until the
-        next fetch; an auth refusal or a DataDome block is handled like any other call.
+        One download per invoice and reading version (the result is kept); a PDF that cannot be
+        read is tried again at the next fetches, then left aside. A temporary error stops the
+        reading until the next fetch; an auth refusal or a DataDome block is handled like any
+        other call.
         """
         owner = invoice_points(invoices, valid_lines(lines, point_energy, invoices), point_energy)
         since = today - timedelta(days=PDF_DAYS)
@@ -490,7 +492,9 @@ class TotalEnergiesCoordinator(DataUpdateCoordinator[TotalEnergiesData]):
         )
         keep = {i.number for i in wanted}
         st = self.state
-        st.pdf_details = {n: d for n, d in st.pdf_details.items() if n in keep}
+        st.pdf_details = {
+            n: d for n, d in st.pdf_details.items() if n in keep and d.get("reader") == PDF_READER
+        }
         st.pdf_failures = {n: c for n, c in st.pdf_failures.items() if n in keep}
         todo = [
             i
@@ -517,7 +521,11 @@ class TotalEnergiesCoordinator(DataUpdateCoordinator[TotalEnergiesData]):
                 st.pdf_failures[number] = st.pdf_failures.get(number, 0) + 1
                 _LOGGER.warning("TotalEnergies invoice PDF not readable (%s)", type(err).__name__)
                 continue
-            st.pdf_details[number] = {"point": owner[number], "detail": detail.as_dict()}
+            st.pdf_details[number] = {
+                "point": owner[number],
+                "detail": detail.as_dict(),
+                "reader": PDF_READER,
+            }
 
     def _with_pdf(self, summaries: dict[str, PointSummary]) -> dict[str, PointSummary]:
         by_point: dict[str, list[InvoiceDetail]] = {}

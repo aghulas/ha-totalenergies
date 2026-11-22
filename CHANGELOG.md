@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 — 2026-11-22
+
+- Invoice PDFs of the layout used since November 2026 read ("Consommation <time class>" lines): the
+  price of one more kWh was unknown for them, and the period ran to the end of the subscription
+  billed in advance.
+- Energy savings certificates priced per kWhc (since April 2026) counted in the price of one more
+  kWh; it was too low by their price, about 0.008 €/kWh.
+- Invoices read by the previous version are read again, a few per fetch.
+
 ## 0.2.0 — 2026-11-22
 
 - **Invoice PDFs read**, in pure Python (pypdf in layout mode; on 26 real invoices the reading equals

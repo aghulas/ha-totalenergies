@@ -20,7 +20,7 @@ from custom_components.totalenergies_pro.api import (
     TotalEnergiesBlockedError,
     TotalEnergiesTemporaryError,
 )
-from custom_components.totalenergies_pro.const import CONF_SPREAD, DOMAIN, PARIS
+from custom_components.totalenergies_pro.const import CONF_SPREAD, DOMAIN, PARIS, PDF_READER
 from custom_components.totalenergies_pro.coordinator import (
     FetchState,
     async_clear_auth_refused,
@@ -388,6 +388,14 @@ async def test_invoice_pdfs_are_read_a_few_per_fetch_and_once(
     saved = FetchState.from_dict(await make_store(hass, entry.entry_id).async_load())
     assert len(saved.pdf_details) == 24
     assert saved.summaries[PRM]["pdf"]["max_reached_kva"] == 42.0
+
+    # A result kept by an older reading is read again, a few per fetch.
+    for record in list(coordinator.state.pdf_details.values())[:2]:
+        record.pop("reader")
+    te.calls.clear()
+    await coordinator.async_refresh()
+    assert len([c for c in te.calls if c[0] == "pdf"]) == 2
+    assert all(r["reader"] == PDF_READER for r in coordinator.state.pdf_details.values())
 
 
 async def test_unreadable_pdf_is_left_aside_after_three_attempts(

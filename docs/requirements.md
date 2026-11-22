@@ -3,8 +3,12 @@
 ## Use cases
 
 - See electricity and gas **costs** in HA's Energy dashboard, consistent with the invoices.
-- Have an **effective price per kWh** (per energy, optionally per time class) that the Energy dashboard
-  applies to the distributor statistics (`enedis_entreprise`, `grdf_conso`).
+- Use the billed **cost statistics** as the cost of the distributor sources (`enedis_entreprise`,
+  `grdf_conso`) in the Energy dashboard: their energy statistics are external, and Home Assistant only
+  accepts a cost statistic (`stat_cost`) on an external statistic — not an entity with the current price
+  nor a fixed price ("Entity or number price is not supported for external statistics", 22/11/2026).
+- Have an **effective price per kWh** (per energy, optionally per time class) for cards, automations and
+  Energy sources that are entities.
 - Follow invoices: last invoice per energy (date, period, kWh, HT, TTC, taxes), cancelled invoices,
   monthly totals; download the PDF when needed.
 - Contract facts at a glance: contract start, status, tariff option (FTA), subscribed power per time
@@ -26,7 +30,7 @@
 | Billed amount HT per line (energy part) | same (`montantHT`) | external statistic `…_energy_cost` (sum, EUR excl. tax) |
 | Invoice totals (all components) | `POST /web-methods/factures?` | external statistics `…_cost_excl_vat` and `…_cost_incl_vat` (sum, EUR), spread over the periods of the invoice's lines |
 | Invoices (number, date, energy, kWh, HT, taxes, VAT, TTC) | same | sensors "last invoice" (TTC state, attributes), "last invoice date", "last invoice energy", "invoiced over 12 months" |
-| Price €/kWh per point | computed (`billing.py`) | sensors "average price excl./incl. VAT" (all-in, **last 12 months** — a single summer gas invoice is mostly fixed charges) for the Energy dashboard; "energy price" (energy part of the last invoice, per class in attributes) |
+| Price €/kWh per point | computed (`billing.py`) | sensors "average price excl./incl. VAT" (all-in, **last 12 months** — a single summer gas invoice is mostly fixed charges) for cards, automations and Energy sources that are entities; "energy price" (energy part of the last invoice, per class in attributes) |
 | Contracts per point | `GET /web-methods/sites` | diagnostic sensors: status, start, network tariff (FTA), subscribed power (kVA, per class in attributes) |
 | Invoice PDF | `GET /web-methods/download/facture/<n>` | service `totalenergies_pro.download_invoice` (opt-in folder, never overwrite, default: last invoice of each point) |
 | Session / last fetch / last error | | diagnostic sensors, binary sensor problem, Repairs |
@@ -51,5 +55,6 @@ v0.2 (optional): unit prices and reached power read from the invoice PDF (port o
    reauth flow, and no other call; a DataDome 403 backs off without retry.
 2. Costs and billed kWh for a past year equal the sums of `te_factures` / `te_consommations` (MCP
    connector) for the same period (manual check with the user).
-3. The price sensors can be selected in the Energy dashboard for the grid and gas sources.
+3. The cost statistics are set as the cost of the Enedis and GRDF sources in the Energy dashboard, with
+   no validation issue (done 22/11/2026; the price sensors were refused there, see Use cases).
 4. Diagnostics contain no token, number, name or address. CI green (hassfest, HACS, ruff, mypy, pytest).

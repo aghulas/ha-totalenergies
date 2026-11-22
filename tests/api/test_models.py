@@ -13,7 +13,11 @@ from custom_components.totalenergies_pro.api import (
     parse_sites,
     windows,
 )
-from custom_components.totalenergies_pro.api.models import parse_date, parse_number
+from custom_components.totalenergies_pro.api.models import (
+    parse_date,
+    parse_number,
+    sites_from_lines,
+)
 
 from .conftest import INVOICE_1, PCE, PRM, invoice, line
 
@@ -173,3 +177,23 @@ def test_consumption_lines() -> None:
         "Calendrier synthétique",
     )
     assert parse_consumptions({"details": {"hasError": True}}) == ([], True)
+
+
+def test_sites_from_lines() -> None:
+    gas = line(INVOICE_1, "2026-01-01", "2026-01-31", "", "5000", "300")
+    gas.update({"pod": PCE, "energie": "02"})
+    orphan = line(INVOICE_1, "2026-01-01", "2026-01-31", "HPH", "1", "1")
+    orphan["pod"] = None
+    lines, _ = parse_consumptions(
+        {
+            "consumptions": [
+                line(INVOICE_1, "2026-01-01", "2026-01-31", "HPH", "1", "0,2"),
+                line(INVOICE_1, "2026-01-01", "2026-01-31", "HCH", "1", "0,1"),
+                gas,
+                orphan,
+            ]
+        }
+    )
+    sites = sites_from_lines(lines)
+    assert [(s.point, s.energy) for s in sites] == [(PRM, "electricity"), (PCE, "gas")]
+    assert all(s.contract.active and s.contract.status == "unknown" for s in sites)

@@ -292,6 +292,29 @@ async def test_temporary_error_is_recorded_without_numbers(
     assert not reauth_flows(hass)
 
 
+async def test_missing_site_list_keeps_the_contracts_and_imports_the_rest(
+    hass: HomeAssistant, te: FakeClient
+) -> None:
+    entry = make_entry()
+    await setup(hass, entry)
+    coordinator = entry.runtime_data
+    contract = coordinator.data.points[PRM].contract
+    assert contract is not None
+    before = await stats(hass, E_ENERGY)
+
+    te.sites_error = TotalEnergiesTemporaryError("no delivery point list on /web-methods/sites")
+    await coordinator.async_refresh()
+    assert coordinator.state.last_result == "ok"
+    assert coordinator.data.points[PRM].contract == contract
+    assert coordinator.data.points[PRM].last_invoice is not None
+    assert len(await stats(hass, E_ENERGY)) == len(before)
+
+    # A DataDome block on the same route still stops the fetch.
+    te.sites_error = TotalEnergiesBlockedError(0)
+    await coordinator.async_refresh()
+    assert coordinator.state.last_result != "ok"
+
+
 async def test_unexpected_error_is_recorded(hass: HomeAssistant, te: FakeClient) -> None:
     te.error = KeyError("boom")
     entry = make_entry()

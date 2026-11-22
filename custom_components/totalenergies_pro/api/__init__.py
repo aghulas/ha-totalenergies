@@ -22,6 +22,7 @@ from .models import (
     parse_consumptions,
     parse_invoices,
     parse_sites,
+    sites_from_lines,
     windows,
 )
 
@@ -49,5 +50,6 @@ __all__ = [
     "parse_invoices",
     "parse_sites",
     "public_path",
+    "sites_from_lines",
     "windows",
 ]

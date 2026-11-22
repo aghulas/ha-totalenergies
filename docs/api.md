@@ -59,6 +59,10 @@ puissanceHeuresCreusesEte, puissanceSouscrite, poucentageEnergieVerte}`,
 - `rang` and `calFou` / `libelleCalFou` come back empty in practice. Gas lines have no
   `classeTemporelle`. One electricity invoice can carry two periods split at the 1st of January.
 - `statutContrat` `45` = active, `60` = terminated (with `dateResiliation` set).
+- 22/11/2026: `/web-methods/sites` answered `{"sites": null}` (before and after reading the accounts),
+  the day after a full answer; the MCP connector's `te_contrats` failed the same morning. The client
+  treats it as a temporary error: the config flow then lists the points billed in the last 12 months
+  (consumption lines), and the daily fetch keeps the last known contracts.
 
 ## Known gaps
 

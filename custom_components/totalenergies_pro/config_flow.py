@@ -6,8 +6,10 @@ Every sign-in attempt here is triggered by the user submitting a form, and is ma
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from collections.abc import Mapping
+from datetime import timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -22,6 +24,7 @@ from homeassistant.core import callback
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import selector
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
+from homeassistant.util import dt as dt_util
 
 from .api import (
     Site,
@@ -30,6 +33,7 @@ from .api import (
     TotalEnergiesBlockedError,
     TotalEnergiesClient,
     TotalEnergiesTemporaryError,
+    sites_from_lines,
 )
 from .billing import SPREAD_PER_DAY, SPREAD_PERIOD_END
 from .const import (
@@ -59,6 +63,8 @@ _USER_SCHEMA = vol.Schema(
         vol.Required(CONF_PASSWORD): _PASSWORD,
     }
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 type SignInError = TotalEnergiesAuthError | TotalEnergiesTemporaryError
 
@@ -99,10 +105,23 @@ class TotalEnergiesConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             client = TotalEnergiesClient(session, username, password)
             await client.async_login()
-            found = await client.async_get_sites() if sites else []
+            found = await self._async_points(client) if sites else []
             return client.tokens, found
         finally:
             session.detach()  # HA owns the connector; this only drops our cookie jar
+
+    @staticmethod
+    async def _async_points(client: TotalEnergiesClient) -> list[Site]:
+        """The site list; when TotalEnergies withholds it, the points billed in the last year."""
+        try:
+            return await client.async_get_sites()
+        except TotalEnergiesBlockedError:
+            raise
+        except TotalEnergiesTemporaryError as err:
+            _LOGGER.warning("TotalEnergies site list unavailable (%s): using billed points", err)
+        today = dt_util.now().date()
+        search = await client.async_get_consumptions(today - timedelta(days=365), today)
+        return sites_from_lines(search.lines)
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}

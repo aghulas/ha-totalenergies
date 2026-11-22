@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import random
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
@@ -31,6 +31,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import (
+    Site,
     Tokens,
     TotalEnergiesAuthError,
     TotalEnergiesBlockedError,
@@ -389,7 +390,15 @@ class TotalEnergiesCoordinator(DataUpdateCoordinator[TotalEnergiesData]):
         )
         start = today - timedelta(days=365 * depth if backfill else REIMPORT_DAYS)
 
-        sites = await self.client.async_get_sites()
+        try:
+            sites: list[Site] | None = await self.client.async_get_sites()
+        except TotalEnergiesBlockedError:
+            raise
+        except TotalEnergiesTemporaryError as err:
+            # The site list alone is missing (seen as `{"sites": null}`): the billing data is
+            # still worth importing; the contracts keep their last known values.
+            _LOGGER.warning("TotalEnergies site list unavailable (%s); contracts kept", err)
+            sites = None
         invoices = (await self.client.async_get_invoices(start, today)).invoices
         search = await self.client.async_get_consumptions(start, today)
         lines = search.lines
@@ -406,10 +415,15 @@ class TotalEnergiesCoordinator(DataUpdateCoordinator[TotalEnergiesData]):
 
         if backfill:
             self.state.backfilled_years, self.state.spread = depth, method
-        summaries = summarize(invoices, lines, sites, point_energy, today)
+        summaries = summarize(invoices, lines, sites or [], point_energy, today)
+        if sites is None and self.data is not None:
+            for point, summary in summaries.items():
+                previous = self.data.points.get(point)
+                if previous is not None and previous.contract is not None:
+                    summaries[point] = replace(summary, contract=previous.contract)
         _LOGGER.debug(
             "TotalEnergies fetch: %d sites, %d invoices, %d lines (backfill: %s)",
-            len(sites),
+            len(sites) if sites is not None else -1,
             len(invoices),
             len(lines),
             backfill,

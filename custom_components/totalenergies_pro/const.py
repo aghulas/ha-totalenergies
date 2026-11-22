@@ -24,6 +24,9 @@ DEFAULT_READ_PDFS: Final = True
 PDF_PER_FETCH: Final = 6  # new invoice PDFs read per daily fetch (the first year takes a few days)
 PDF_DAYS: Final = 365  # PDFs of the invoices issued over this many days are read and kept
 PDF_MAX_FAILURES: Final = 3  # a PDF that cannot be read is skipped after this many attempts
+# Version of the PDF reading: a kept result read by another version is read again (2: layout of
+# November 2026, certificates per kWhc).
+PDF_READER: Final = 2
 SUGGESTED_PDF_FOLDER: Final = "/media/totalenergies"
 
 # Billing periods are French local dates, whatever the HA time zone.

@@ -174,6 +174,15 @@ def parse_text(text: str) -> Parsed:
     )
 
 
+def _supply_class(label: str) -> str | None:
+    """Time class of a supply line ("Heures Pleines Eté", or "Consommation Heures Pleines Eté" since
+    the invoices of November 2026); "base" for the gas consumption line; None for other lines."""
+    if label == GAS_CONSUMPTION:
+        return "base"
+    name = label.removeprefix(f"{GAS_CONSUMPTION} ")
+    return CLASSES.get(name)
+
+
 def _class_of(label: str) -> str | None:
     for name in sorted(CLASSES, key=len, reverse=True):
         if name in label:
@@ -260,13 +269,14 @@ def summarize_invoice(parsed: Parsed) -> InvoiceDetail:
     can be a weighted one). Amounts rather than unit prices: an invoice can bill two periods with
     two prices (split at the 1st of January).
     """
-    kwh_lines = [x for x in parsed.lines if x.price_unit == "kWh" and x.amount_excl_tax is not None]
-    supply = [
-        x for x in kwh_lines if x.quantity and (x.label in CLASSES or x.label == GAS_CONSUMPTION)
+    # Certificates are priced per "kWhc" (weighted kWh) since November 2026: shared lines too.
+    kwh_lines = [
+        x for x in parsed.lines if x.price_unit in ("kWh", "kWhc") and x.amount_excl_tax is not None
     ]
+    supply = [x for x in kwh_lines if x.quantity and x.unit == "kWh" and _supply_class(x.label)]
     kwh_by_class: dict[str, float] = defaultdict(float)
     for x in supply:
-        kwh_by_class[CLASSES.get(x.label, "base")] += x.quantity or 0.0
+        kwh_by_class[_supply_class(x.label) or "base"] += x.quantity or 0.0
     total_kwh = sum(kwh_by_class.values())
     by_class: dict[str, float] = {}
     if total_kwh > 0:

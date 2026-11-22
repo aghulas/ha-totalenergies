@@ -67,6 +67,33 @@ GAS = """
 """
 
 
+# Layout of the invoices since November 2026: "Consommation <class>" labels, certificates per kWhc.
+ELEC_2026_11 = """
+  Date de facture : 10/11/26
+  Energie active (HT)                                                          500,00 €
+  Consommation Heures Pleines Eté   01/10/26  31/10/26   2 000 kWh   0,10000 €/kWh   200,00 €   20 %
+  Consommation Heures Creuses Eté   01/10/26  31/10/26   1 000 kWh   0,05000 €/kWh    50,00 €   20 %
+  Certificat d'économie d'énergie (coef : 0,7000 )  01/10/26  31/10/26  2 100,00 kWhc  0,01000 €/kWhc  21,00 €  20 %
+  Certificat d'économie d'énergie précarité (coef : 0,7000 x 0,300 )  01/10/26  31/10/26  630,00 kWhc  0,01000 €/kWhc  6,30 €  20 %
+  Abonnement fournisseur Echoir   01/11/26  30/11/26                420,00 €/an    35,00 €   20 %
+  Composante de soutirage variable Heures Pleines Eté  01/10/26  31/10/26  2 000 kWh  0,02000 €/kWh  40,00 €  20 %
+  Composante de comptage - Echoir  01/11/26  30/11/26  30 jour  0,80000 €/jour  24,00 €  20 %
+  Accise sur l'électricité    01/10/26  31/10/26   3 000 kWh    0,02500 €/kWh     75,00 €   20 %
+"""
+
+
+def test_layout_of_november_2026() -> None:
+    d = summarize_invoice(parse_text(ELEC_2026_11))
+    # shared over 3000 kWh: certificates 27.30 €, excise 75 € → 0.0341
+    assert d.marginal_price_by_class == {
+        "hpe": pytest.approx(0.1 + 0.02 + 0.0341),
+        "hce": pytest.approx(0.05 + 0.0341),
+    }
+    assert d.kwh == 3000.0
+    # the period is the consumption one, not the subscription billed in advance
+    assert (d.period_start, d.period_end) == (date(2026, 10, 1), date(2026, 10, 31))
+
+
 def test_numbers() -> None:
     assert number("4 467") == 4467.0
     assert number("1301,40000") == 1301.4

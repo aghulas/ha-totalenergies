@@ -28,6 +28,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from .api import ConsumptionLine, Invoice, Site
+from .invoice_pdf import PdfSummary
 
 SPREAD_PER_DAY = "per_day"
 SPREAD_PERIOD_END = "period_end"
@@ -307,6 +308,7 @@ class PointSummary:
     billed_12_months_kwh: float | None = None
     invoices_12_months: int = 0
     contract: ContractInfo | None = None
+    pdf: PdfSummary | None = None  # read from the invoice PDFs (v0.2)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -320,6 +322,7 @@ class PointSummary:
             "billed_12_months_kwh": self.billed_12_months_kwh,
             "invoices_12_months": self.invoices_12_months,
             "contract": self.contract.as_dict() if self.contract else None,
+            "pdf": self.pdf.as_dict() if self.pdf else None,
         }
 
     @classmethod
@@ -343,6 +346,7 @@ class PointSummary:
             billed_12_months_kwh=_float(data.get("billed_12_months_kwh")),
             invoices_12_months=count if isinstance(count, int) else 0,
             contract=ContractInfo.from_dict(data.get("contract")),
+            pdf=PdfSummary.from_dict(data.get("pdf")),
         )
 
 

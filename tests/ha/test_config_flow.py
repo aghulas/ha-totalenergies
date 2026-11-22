@@ -217,6 +217,7 @@ async def test_options_flow(hass: HomeAssistant, sign_in: FakeSignIn) -> None:
             "fetch_hour": 9,
             "spread": "period_end",
             "pdf_folder": " /media/totalenergies ",
+            "read_pdfs": False,
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -225,6 +226,7 @@ async def test_options_flow(hass: HomeAssistant, sign_in: FakeSignIn) -> None:
         "fetch_hour": 9,
         "spread": "period_end",
         "pdf_folder": "/media/totalenergies",
+        "read_pdfs": False,
     }
 
 

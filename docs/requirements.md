@@ -35,7 +35,11 @@
 | Invoice PDF | `GET /web-methods/download/facture/<n>` | service `totalenergies_pro.download_invoice` (opt-in folder, never overwrite, default: last invoice of each point) |
 | Session / last fetch / last error | | diagnostic sensors, binary sensor problem, Repairs |
 
-v0.2 (optional): unit prices and reached power read from the invoice PDF (port of `detail.py`).
+v0.2: the invoice PDFs of the last 12 months are read (`invoice_pdf.py`, port of `detail.py` on pypdf
+in layout mode, identical to `pdftotext -layout` on 26 real invoices), once per invoice, at most 6 per
+fetch, cached in the private store: sensors "price of one more kWh" (marginal price excl. VAT, per
+class), "maximum power reached" (12 months, electricity) and "annual reference consumption" (gas CAR);
+the tariff and subscribed power fall back on the PDF when the site list is missing.
 
 ## Behaviour
 

@@ -65,11 +65,13 @@ async def test_first_setup_backfills_statistics_on_real_dates(
     await setup(hass, entry)
 
     assert entry.state is ConfigEntryState.LOADED
-    assert te.calls == [
+    assert te.calls[:3] == [
         ("sites",),
         ("invoices", START, TODAY),
         ("consumptions", START, TODAY),
     ]
+    # Then the PDFs of the newest invoices, a few per fetch.
+    assert [c[0] for c in te.calls[3:]] == ["pdf"] * 6
     # 12 invoices per energy issued in the last 12 months; electricity read on the 24th.
     rows = await stats(hass, E_ENERGY)
     assert _day(rows[0]) == date(2025, 2, 24)
@@ -355,3 +357,90 @@ async def test_extra_line_for_an_unselected_point_is_ignored(
     await setup(hass, entry)
     assert await stats(hass, statistic_id("99999999999999", "billed_energy")) == []
     assert day_start(date(2026, 1, 1)).hour == 23
+
+
+async def test_invoice_pdfs_are_read_a_few_per_fetch_and_once(
+    hass: HomeAssistant, te: FakeClient
+) -> None:
+    entry = make_entry()
+    await setup(hass, entry)
+    coordinator = entry.runtime_data
+    first = [c[1] for c in te.calls if c[0] == "pdf"]
+    assert len(first) == 6 and first[0].startswith(("1", "2"))
+    for _ in range(3):
+        await coordinator.async_refresh()
+    pdfs = [c[1] for c in te.calls if c[0] == "pdf"]
+    assert len(pdfs) == len(set(pdfs)) == 24  # 12 per energy over 12 months, each read once
+    te.calls.clear()
+    await coordinator.async_refresh()
+    assert not [c for c in te.calls if c[0] == "pdf"]
+
+    s = coordinator.data.points[PRM].pdf
+    assert s is not None and s.invoices == 12
+    assert s.last is not None and s.last.invoice_date == date(2026, 3, 10)
+    assert s.max_reached_kva == 30.0 + 12  # December
+    assert s.reached_kva_by_class == {"hph": 42.0, "hch": 20.0}
+    assert s.overrun_hours == 1.0
+    gas = coordinator.data.points[PCE].pdf
+    assert gas is not None and gas.last is not None
+    assert gas.last.references["car_kwh"] == 150000.0
+    # Kept across restarts (private storage), without numbers in the summaries.
+    saved = FetchState.from_dict(await make_store(hass, entry.entry_id).async_load())
+    assert len(saved.pdf_details) == 24
+    assert saved.summaries[PRM]["pdf"]["max_reached_kva"] == 42.0
+
+
+async def test_unreadable_pdf_is_left_aside_after_three_attempts(
+    hass: HomeAssistant, te: FakeClient
+) -> None:
+    newest = max(te.invoices, key=lambda i: i.date or date.min)
+    assert newest.number is not None
+    te.unreadable.add(newest.number)
+    entry = make_entry()
+    await setup(hass, entry)
+    coordinator = entry.runtime_data
+    for _ in range(5):
+        await coordinator.async_refresh()
+    tries = [c for c in te.calls if c == ("pdf", newest.number)]
+    assert len(tries) == 3
+    assert coordinator.state.last_result == "ok"
+    assert coordinator.state.pdf_failures[newest.number] == 3
+
+
+async def test_pdf_download_error_stops_the_reading_not_the_fetch(
+    hass: HomeAssistant, te: FakeClient
+) -> None:
+    calls = 0
+
+    async def flaky(number: str) -> bytes:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise TotalEnergiesTemporaryError(f"HTTP 500 on /download/{number}")
+        te.last_pdf = number
+        return b"%PDF"
+
+    te.async_download_invoice = flaky  # type: ignore[method-assign]
+    entry = make_entry()
+    await setup(hass, entry)
+    coordinator = entry.runtime_data
+    assert calls == 2
+    assert coordinator.state.last_result == "ok"
+    assert len(coordinator.state.pdf_details) == 1
+
+
+async def test_pdf_reading_can_be_turned_off(hass: HomeAssistant, te: FakeClient) -> None:
+    entry = make_entry(read_pdfs=False)
+    await setup(hass, entry)
+    assert not [c for c in te.calls if c[0] == "pdf"]
+    assert entry.runtime_data.data.points[PRM].pdf is None
+
+
+async def test_blocked_pdf_download_is_a_block(hass: HomeAssistant, te: FakeClient) -> None:
+    async def blocked(number: str) -> bytes:
+        raise TotalEnergiesBlockedError(0)
+
+    te.async_download_invoice = blocked  # type: ignore[method-assign]
+    entry = make_entry()
+    await setup(hass, entry)
+    assert entry.runtime_data.state.last_result == "blocked"

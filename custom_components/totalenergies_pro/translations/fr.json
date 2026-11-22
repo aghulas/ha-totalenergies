@@ -44,7 +44,8 @@
           "history_years": "Historique à importer (l'augmenter importe les factures plus anciennes)",
           "fetch_hour": "Heure de la récupération quotidienne (un délai aléatoire de 30 min au plus s'ajoute)",
           "spread": "Placement des montants facturés",
-          "pdf_folder": "Dossier des factures PDF (vide : téléchargement désactivé), par exemple /media/totalenergies"
+          "pdf_folder": "Dossier des factures PDF (vide : téléchargement désactivé), par exemple /media/totalenergies",
+          "read_pdfs": "Lire les PDF des factures (prix unitaires, puissance atteinte, consommation de référence du gaz)"
         }
       }
     }
@@ -108,6 +109,15 @@
       },
       "subscribed_power": {
         "name": "Puissance souscrite"
+      },
+      "marginal_price": {
+        "name": "Prix d'un kWh de plus"
+      },
+      "max_reached_power": {
+        "name": "Puissance maximale atteinte"
+      },
+      "reference_consumption": {
+        "name": "Consommation annuelle de référence"
       }
     },
     "binary_sensor": {

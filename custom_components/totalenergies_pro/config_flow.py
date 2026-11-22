@@ -41,10 +41,12 @@ from .const import (
     CONF_HISTORY_YEARS,
     CONF_PDF_FOLDER,
     CONF_POINTS,
+    CONF_READ_PDFS,
     CONF_SPREAD,
     DEFAULT_FETCH_HOUR,
     DEFAULT_HISTORY_YEARS,
     DEFAULT_PDF_FOLDER,
+    DEFAULT_READ_PDFS,
     DOMAIN,
 )
 from .coordinator import async_clear_auth_refused
@@ -238,6 +240,7 @@ class TotalEnergiesOptionsFlow(OptionsFlowWithReload):
                     CONF_FETCH_HOUR: int(user_input[CONF_FETCH_HOUR]),
                     CONF_SPREAD: str(user_input[CONF_SPREAD]),
                     CONF_PDF_FOLDER: str(user_input.get(CONF_PDF_FOLDER) or "").strip(),
+                    CONF_READ_PDFS: bool(user_input.get(CONF_READ_PDFS, DEFAULT_READ_PDFS)),
                 }
             )
         schema = vol.Schema(
@@ -250,6 +253,7 @@ class TotalEnergiesOptionsFlow(OptionsFlowWithReload):
                     )
                 ),
                 vol.Optional(CONF_PDF_FOLDER): selector.TextSelector(),
+                vol.Required(CONF_READ_PDFS): selector.BooleanSelector(),
             }
         )
         current = {
@@ -257,6 +261,7 @@ class TotalEnergiesOptionsFlow(OptionsFlowWithReload):
             CONF_FETCH_HOUR: DEFAULT_FETCH_HOUR,
             CONF_SPREAD: SPREAD_PER_DAY,
             CONF_PDF_FOLDER: DEFAULT_PDF_FOLDER,
+            CONF_READ_PDFS: DEFAULT_READ_PDFS,
             **self.config_entry.options,
         }
         return self.async_show_form(

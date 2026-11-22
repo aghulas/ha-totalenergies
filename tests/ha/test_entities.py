@@ -67,6 +67,39 @@ async def test_sensors(hass: HomeAssistant, te: FakeClient) -> None:
     )
     assert hass.states.get(_entity(hass, PRM, "problem")).state == "off"  # type: ignore[union-attr]
 
+    # From the invoice PDFs (the newest six invoices are read at setup).
+    marginal = hass.states.get(_entity(hass, PRM, "marginal_price"))
+    assert marginal is not None
+    assert float(marginal.state) == 0.2
+    assert marginal.attributes["price_hph"] == 0.22
+    assert marginal.attributes["price_incl_vat"] == 0.24
+    power = hass.states.get(_entity(hass, PRM, "max_reached_power"))
+    assert power is not None
+    assert power.attributes["unit_of_measurement"] == "kVA"
+    assert power.attributes["subscribed_hph"] == 42.0
+    assert "reached_hph" in power.attributes
+    car = hass.states.get(_entity(hass, PCE, "reference_consumption"))
+    assert car is not None
+    assert float(car.state) == 150000.0
+    assert car.attributes["network_tariff"] == "T3"
+    reg = er.async_get(hass)
+    assert reg.async_get_entity_id("sensor", DOMAIN, f"{PCE}_max_reached_power") is None
+    assert reg.async_get_entity_id("sensor", DOMAIN, f"{PRM}_reference_consumption") is None
+
+
+async def test_contract_sensors_fall_back_on_the_pdf(hass: HomeAssistant, te: FakeClient) -> None:
+    te.sites = []  # TotalEnergies withholds the list of sites
+    entry = make_entry()
+    await setup(hass, entry)
+    assert hass.states.get(_entity(hass, PCE, "tariff")).state == "T3"  # type: ignore[union-attr]
+    elec = hass.states.get(_entity(hass, PRM, "tariff"))
+    assert elec is not None
+    assert elec.attributes["option"] == "Courte Utilisation"
+    power = hass.states.get(_entity(hass, PRM, "subscribed_power"))
+    assert power is not None
+    assert power.state == "42.0"
+    assert power.attributes["power_hph"] == 42.0
+
 
 async def test_problem_sensor_and_button(hass: HomeAssistant, te: FakeClient) -> None:
     te.error = TotalEnergiesAuthError("refused", 200)

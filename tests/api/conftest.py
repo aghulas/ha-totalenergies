@@ -92,6 +92,7 @@ class FakeTotalEnergies:
         self.invoices: list[dict[str, Any]] = []
         self.consumptions: list[dict[str, Any]] = []
         self.heavy_load = False
+        self.sites_null = False
         self.partial = False
         self.pdf = PDF
 
@@ -169,6 +170,8 @@ class FakeTotalEnergies:
                 {"comptes": [{"compte": {"numero": "200000000001", "nom": "CLIENT SYNTH"}}]}
             )
         if path == "/web-methods/sites":
+            if self.sites_null:
+                return web.json_response({"sites": None})
             return web.json_response({"sites": [{"site": {"pod": PRM, "energie": "01"}}]})
         if path == "/web-methods/factures":
             return web.json_response({"factures": self.invoices, "isHeavyLoad": self.heavy_load})

@@ -378,8 +378,15 @@ class TotalEnergiesClient:
         return parse_accounts(await self._call_json("GET", PATH_ACCOUNTS))
 
     async def async_get_sites(self) -> list[Site]:
-        """Delivery points and their contracts (active and terminated)."""
-        return parse_sites(await self._call_json("GET", PATH_SITES))
+        """Delivery points and their contracts (active and terminated).
+
+        TotalEnergies sometimes answers `{"sites": null}` for a while (seen 22/11/2026, the day
+        after a full answer): that is an outage, not an account without points.
+        """
+        payload = await self._call_json("GET", PATH_SITES)
+        if not isinstance(payload, dict) or not isinstance(payload.get("sites"), list):
+            raise TotalEnergiesTemporaryError(f"no delivery point list on {PATH_SITES}")
+        return parse_sites(payload)
 
     async def async_get_invoices(self, start: date, end: date) -> InvoiceSearch:
         """Invoices dated within [start, end], searched in windows of 12 months."""

@@ -13,6 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.totalenergies_pro.api import (
+    ConsumptionSearch,
     Tokens,
     TotalEnergiesAuthError,
     TotalEnergiesBlockedError,
@@ -22,7 +23,7 @@ from custom_components.totalenergies_pro.config_flow import point_labels
 from custom_components.totalenergies_pro.const import CONF_POINTS, DOMAIN
 from custom_components.totalenergies_pro.coordinator import FetchState, make_store
 
-from .common import PASSWORD, PCE, PRM, USERNAME, make_entry, site
+from .common import PASSWORD, PCE, PRM, USERNAME, line, make_entry, site
 
 USER = {"username": " Compte@Exemple.invalid ", "password": PASSWORD}
 TOKENS = Tokens("id-synth", "refresh-synth", 2_000_000_000.0)
@@ -39,6 +40,9 @@ class FakeSignIn:
             site(PCE, "gas", "T3", {}),
         ]
         self.tokens: Tokens | None = TOKENS
+        self.sites_error: Exception | None = None
+        self.lines: list[Any] = []
+        self.searches: list[tuple[date, date]] = []
 
     def build(self, _session: Any, username: str, password: str) -> FakeSignIn:
         self._pending = (username, password)
@@ -50,7 +54,13 @@ class FakeSignIn:
             raise self.error
 
     async def async_get_sites(self) -> list[Any]:
+        if self.sites_error is not None:
+            raise self.sites_error
         return self.sites
+
+    async def async_get_consumptions(self, start: date, end: date) -> ConsumptionSearch:
+        self.searches.append((start, end))
+        return ConsumptionSearch(self.lines, True)
 
 
 @pytest.fixture
@@ -108,6 +118,38 @@ async def test_sign_in_errors_are_shown_and_not_retried(
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {"base": key}
     assert len(sign_in.logins) == 1
+
+
+async def test_points_come_from_the_bills_when_the_site_list_is_missing(
+    hass: HomeAssistant, sign_in: FakeSignIn
+) -> None:
+    sign_in.sites_error = TotalEnergiesTemporaryError("no delivery point list")
+    jan1, jan31 = date(2026, 1, 1), date(2026, 1, 31)
+    sign_in.lines = [
+        line("1", PRM, jan1, jan31, "HPH", 10.0, 1.0),
+        line("2", PCE, jan1, jan31, None, 10.0, 1.0),
+    ]
+    flow_id = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(flow_id, USER)
+    assert result["step_id"] == "points"
+    assert len(sign_in.searches) == 1
+    result = await hass.config_entries.flow.async_configure(flow_id, {CONF_POINTS: [PRM, PCE]})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_POINTS] == {
+        PRM: {"energy": "electricity", "segment": None, "label": "Electricity"},
+        PCE: {"energy": "gas", "segment": None, "label": "Gas"},
+    }
+    assert len(sign_in.logins) == 1
+
+
+async def test_blocked_site_list_is_not_worked_around(
+    hass: HomeAssistant, sign_in: FakeSignIn
+) -> None:
+    sign_in.sites_error = TotalEnergiesBlockedError(0)
+    flow_id = await _start(hass)
+    result = await hass.config_entries.flow.async_configure(flow_id, USER)
+    assert result["errors"] == {"base": "blocked"}
+    assert sign_in.searches == []
 
 
 async def test_no_point_selected(hass: HomeAssistant, sign_in: FakeSignIn) -> None:

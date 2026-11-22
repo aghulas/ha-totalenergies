@@ -140,6 +140,7 @@ class FakeClient:
         self.tokens: Tokens | None = None
         self.kwargs: dict[str, Any] = {}
         self.pdf = PDF
+        self.sites_error: Exception | None = None
 
     def build(self, *args: Any, **kwargs: Any) -> FakeClient:
         self.kwargs = kwargs
@@ -182,6 +183,8 @@ class FakeClient:
 
     async def async_get_sites(self) -> list[Site]:
         self._call("sites")
+        if self.sites_error is not None:
+            raise self.sites_error
         return self.sites
 
     def _issued(self, number: str | None) -> date | None:

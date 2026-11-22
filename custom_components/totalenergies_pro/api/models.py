@@ -396,3 +396,19 @@ def merge_consumptions(batches: list[list[ConsumptionLine]], partial: bool) -> C
         key=lambda x: (x.start or date.min, x.point or "", x.time_class or "", x.rank or ""),
     )
     return ConsumptionSearch(ordered, partial)
+
+
+def sites_from_lines(lines: list[ConsumptionLine]) -> list[Site]:
+    """Delivery points seen on billed consumption lines, for when the site list is unavailable.
+
+    The contract is unknown (status "unknown"); a point billed recently is taken as active.
+    """
+    seen: dict[str, Energy] = {}
+    for line in lines:
+        if line.point and line.energy and line.point not in seen:
+            seen[line.point] = line.energy
+    unknown = Contract(None, "unknown", None, None, None, True, None, None, {}, None)
+    return [
+        Site(point, energy, None, None, None, None, None, unknown, None, None)
+        for point, energy in seen.items()
+    ]

@@ -151,6 +151,16 @@ async def test_bad_answers_are_temporary(
         await client.async_get_sites()
 
 
+async def test_a_null_site_list_is_an_outage_not_an_empty_account(
+    fake: Fake, http: aiohttp.ClientSession, clock: Clock
+) -> None:
+    state, _ = fake
+    client = make_client(fake, http, clock)
+    state.sites_null = True  # seen live on 22/11/2026, the day after a full answer
+    with pytest.raises(TotalEnergiesTemporaryError, match="no delivery point list"):
+        await client.async_get_sites()
+
+
 async def test_network_error_is_temporary(http: aiohttp.ClientSession, clock: Clock) -> None:
     client = make_client(({}, "http://127.0.0.1:9"), http, clock)  # type: ignore[arg-type]
     with pytest.raises(TotalEnergiesTemporaryError, match="request failed"):

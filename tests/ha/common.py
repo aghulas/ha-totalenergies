@@ -225,7 +225,11 @@ class FakeClient:
                 subscribed_kva={"hph": 42.0, "hch": 42.0, "weighted": 42.0},
                 reached_kva={"hph": 30.0 + issued.month, "hch": 20.0},
                 overrun_hours={"hph": 1.0 if issued.month == 2 else 0.0, "hch": 0.0},
-                references={"tariff_option": "Courte Utilisation"},
+                references={
+                    "tariff_option": "Courte Utilisation",
+                    "segment": "C4",
+                    "connection": "BT > 36 kVA",
+                },
             )
         return InvoiceDetail(
             invoice_date=issued,

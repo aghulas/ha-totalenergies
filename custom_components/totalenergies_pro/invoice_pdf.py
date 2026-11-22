@@ -46,6 +46,8 @@ _REFERENCES: dict[str, re.Pattern[str]] = {
     "car_kwh": re.compile(rf"Consommation Annuelle de Référence\s*:\s*({_NB})\s*kWh"),
     "conversion_factor": re.compile(rf"Coef\. de conversion \(m3 à kWh\)\s*:\s*({_NB})"),
     "tariff_option": re.compile(r"Option tarifaire\s*:\s*([^\n]+?)(?:\s{2,}|$)", re.MULTILINE),
+    "segment": re.compile(r"Segment\s*:\s*(\S+)"),  # electricity: C4, C5…
+    "connection": re.compile(r"Raccordement\s*:\s*([^\n]+?)(?:\s{2,}|$)", re.MULTILINE),
     "invoice_date": re.compile(r"Date de facture\s*:\s*(\d\d/\d\d/\d\d)"),
 }
 _NUMERIC = ("car_kwh", "conversion_factor")

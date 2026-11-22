@@ -109,7 +109,8 @@ def _gas_attrs(s: PointSummary) -> dict[str, Any]:
 def _tariff(s: PointSummary) -> str | None:
     if s.contract and s.contract.tariff_formula:
         return s.contract.tariff_formula
-    value = _pdf_ref(s, "network_tariff")  # gas: T1…T4 on the invoice
+    # On the invoice: gas T1…T4; electricity its segment (C4…), the tariff formula is not printed.
+    value = _pdf_ref(s, "network_tariff") or _pdf_ref(s, "segment")
     return str(value) if value else None
 
 
@@ -214,7 +215,8 @@ SENSORS: tuple[TotalEnergiesSensorDescription, ...] = (
         value_fn=_tariff,
         attrs_fn=lambda s: {
             "option": (s.contract.tariff_option if s.contract else None)
-            or _pdf_ref(s, "tariff_option")
+            or _pdf_ref(s, "tariff_option"),
+            "connection": _pdf_ref(s, "connection"),
         },
     ),
     TotalEnergiesSensorDescription(

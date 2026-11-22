@@ -15,9 +15,10 @@ dashboard shows real costs next to the quantities measured by the distributors.
 Quantities with fine time resolution come from the distributors' integrations (siblings in `~/dev`):
 `ha-enedis` (`enedis_entreprise`, 5-min load curve), `ha-grdf` (`grdf_conso`, daily gas), `ha-veolia`.
 **None of them carries money.** TotalEnergies only knows billing periods (monthly, per time class), so
-this integration's value is: **cost statistics**, **effective €/kWh price entities** usable by the Energy
-dashboard ("use an entity with current price") on top of the Enedis / GRDF statistics, invoices and
-contract facts. Billed kWh are imported too, but they are a billing view, not the measurement.
+this integration's value is: **cost statistics** that the Energy dashboard uses as the cost of the
+Enedis / GRDF sources (`stat_cost` — HA refuses an entity or a fixed price on an external statistic,
+checked live on 22/11/2026), effective €/kWh price entities (cards, automations, sources that are
+entities), invoices and contract facts. Billed kWh are imported too, but they are a billing view, not the measurement.
 Reference for this pattern in HA core: the `opower` integration (utility consumption + cost statistics).
 
 ## Non-negotiable rules

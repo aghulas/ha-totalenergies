@@ -15,10 +15,15 @@ CONF_HISTORY_YEARS: Final = "history_years"
 CONF_FETCH_HOUR: Final = "fetch_hour"
 CONF_SPREAD: Final = "spread"
 CONF_PDF_FOLDER: Final = "pdf_folder"
+CONF_READ_PDFS: Final = "read_pdfs"
 
 DEFAULT_HISTORY_YEARS: Final = 3
 DEFAULT_FETCH_HOUR: Final = 11  # invoices are issued around the 10th
 DEFAULT_PDF_FOLDER: Final = ""  # empty: PDF download disabled
+DEFAULT_READ_PDFS: Final = True
+PDF_PER_FETCH: Final = 6  # new invoice PDFs read per daily fetch (the first year takes a few days)
+PDF_DAYS: Final = 365  # PDFs of the invoices issued over this many days are read and kept
+PDF_MAX_FAILURES: Final = 3  # a PDF that cannot be read is skipped after this many attempts
 SUGGESTED_PDF_FOLDER: Final = "/media/totalenergies"
 
 # Billing periods are French local dates, whatever the HA time zone.

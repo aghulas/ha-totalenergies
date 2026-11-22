@@ -27,6 +27,7 @@ from custom_components.totalenergies_pro.api import (
     Tokens,
 )
 from custom_components.totalenergies_pro.const import CONF_HISTORY_YEARS, CONF_POINTS, DOMAIN
+from custom_components.totalenergies_pro.invoice_pdf import InvoiceDetail
 
 PRM = "00000000000001"
 PCE = "GI000001"
@@ -141,6 +142,8 @@ class FakeClient:
         self.kwargs: dict[str, Any] = {}
         self.pdf = PDF
         self.sites_error: Exception | None = None
+        self.last_pdf: str | None = None
+        self.unreadable: set[str] = set()  # invoice numbers whose PDF cannot be read
 
     def build(self, *args: Any, **kwargs: Any) -> FakeClient:
         self.kwargs = kwargs
@@ -202,7 +205,34 @@ class FakeClient:
 
     async def async_download_invoice(self, number: str) -> bytes:
         self._call("pdf", number)
+        self.last_pdf = number
         return self.pdf
+
+    def read(self, _data: bytes) -> InvoiceDetail:
+        """Stands in for invoice_pdf.read_invoice (tested on its own): a detail per invoice."""
+        number = self.last_pdf or ""
+        if number in self.unreadable:
+            raise ValueError("unreadable PDF")
+        issued = self._issued(number) or date.min
+        if number.startswith("1"):  # electricity
+            return InvoiceDetail(
+                invoice_date=issued,
+                period_start=issued - timedelta(days=46),
+                period_end=issued - timedelta(days=16),
+                kwh=1300.0,
+                marginal_price=0.2,
+                marginal_price_by_class={"hph": 0.22, "hch": 0.15},
+                subscribed_kva={"hph": 42.0, "hch": 42.0, "weighted": 42.0},
+                reached_kva={"hph": 30.0 + issued.month, "hch": 20.0},
+                overrun_hours={"hph": 1.0 if issued.month == 2 else 0.0, "hch": 0.0},
+                references={"tariff_option": "Courte Utilisation"},
+            )
+        return InvoiceDetail(
+            invoice_date=issued,
+            kwh=5000.0,
+            marginal_price=0.07,
+            references={"car_kwh": 150000.0, "network_tariff": "T3", "profile": "P012"},
+        )
 
 
 async def stats(hass: HomeAssistant, statistic_id: str) -> list[dict[str, Any]]:

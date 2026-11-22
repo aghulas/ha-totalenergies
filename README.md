@@ -11,7 +11,7 @@ electricity, GRDF for gas) but know nothing about money. TotalEnergies only know
 this integration does not replace them: it puts the cost of each invoice on the days it bills, and the
 Energy dashboard shows those costs next to the distributor's consumption.
 
-**Status: 0.1.0, first release.** It runs on one real Home Assistant since November 2026: three years of
+**Status: 0.2.0.** 0.1.0 was the first release. It runs on one real Home Assistant since November 2026: three years of
 invoices imported, totals checked to the cent against TotalEnergies.
 
 ## Why this design
@@ -82,6 +82,11 @@ energy would be counted twice.
 - energy price (energy part of the last invoice, per time class as attributes);
 - invoiced over 12 months;
 - contract status, start, network tariff and subscribed power (electricity);
+- read from the invoice PDFs: the **price of one more kWh** (excl. VAT: supply, capacity, energy
+  savings certificates, network variable part and excise — per time class as attributes), the
+  **maximum power reached** over 12 months (electricity, per class, with the subscribed power and the
+  overrun hours) and the gas **annual reference consumption** (CAR, with the network tariff, profile and
+  conversion factor);
 - a *connection problem* sensor (with the last error and its date) and a *refresh* button (at most one
   fetch every five minutes).
 
@@ -97,6 +102,7 @@ point. Existing files are never overwritten.
 | Daily fetch hour | 11 | Local time; a random delay of up to 30 minutes is added. Invoices are issued around the 10th. |
 | Where billed amounts are placed | spread over the days of the period | or on the last day of the period. Changing it re-imports everything. |
 | Folder for invoice PDFs | empty (off) | e.g. `/media/totalenergies` |
+| Read the invoice PDFs | on | One download per invoice, ever: the last 12 months at first, a few a day, then each new invoice. |
 
 ## Limits
 
@@ -105,8 +111,11 @@ point. Existing files are never overwritten.
 - A subscription billed in advance ("à échoir") and taken back later can move part of the fixed charges
   from one month to the next; yearly totals are exact.
 - TotalEnergies sometimes withholds the list of delivery points for a while. The setup then offers the
-  points billed in the last 12 months, and the contract sensors stay unknown until the list comes back;
-  invoices and costs are not affected.
+  points billed in the last 12 months; the tariff and the subscribed power are then taken from the
+  invoice PDFs, the other contract sensors stay unknown until the list comes back. Invoices and costs
+  are not affected.
+- The invoice PDFs are read by their layout: a change of the invoice template could stop that reading
+  (the sensors from the PDFs then stop updating; nothing else is affected).
 - The API is the one of the customer portal: unofficial, undocumented, subject to change.
 
 ## If TotalEnergies refuses the sign-in
@@ -151,7 +160,7 @@ GRDF pour le gaz) mais ne connaissent pas les montants. TotalEnergies ne connaî
 facturation : l'intégration ne les remplace donc pas, elle place le coût de chaque facture sur les jours
 qu'elle facture, et le tableau de bord Énergie l'affiche à côté de la consommation du distributeur.
 
-**État : 0.1.0, première version publiée.** Elle tourne sur un vrai Home Assistant depuis novembre 2026 :
+**État : 0.2.0.** La 0.1.0 a été la première version publiée. Elle tourne sur un vrai Home Assistant depuis novembre 2026 :
 trois ans de factures importés, totaux recoupés au centime avec TotalEnergies.
 
 ### Pourquoi cette conception
@@ -226,6 +235,11 @@ comme source à côté de celle du distributeur : l'énergie serait comptée deu
 - prix de l'énergie (part énergie de la dernière facture, par poste en attributs) ;
 - facturé sur 12 mois ;
 - statut, début, tarif d'acheminement et puissance souscrite du contrat (électricité) ;
+- lus sur les PDF des factures : le **prix d'un kWh de plus** (HT : fourniture, capacité, certificats
+  d'économie d'énergie, part variable de l'acheminement et accise, par poste en attributs), la
+  **puissance maximale atteinte** sur 12 mois (électricité, par poste, avec la puissance souscrite et
+  les heures de dépassement) et la **consommation annuelle de référence** du gaz (CAR, avec le tarif
+  d'acheminement, le profil et le coefficient de conversion) ;
 - un capteur *problème de connexion* (avec la dernière erreur et sa date) et un bouton *actualiser*
   (une collecte toutes les cinq minutes au plus).
 
@@ -241,6 +255,7 @@ défaut, la dernière facture de chaque point. Un fichier existant n'est jamais 
 | Heure de la collecte quotidienne | 11 | Heure locale ; un délai aléatoire de 30 minutes au plus s'ajoute. Les factures sont émises vers le 10. |
 | Placement des montants facturés | répartis sur les jours de la période | ou sur le dernier jour de la période. Le changer réimporte tout. |
 | Dossier des PDF de factures | vide (désactivé) | par exemple `/media/totalenergies` |
+| Lire les PDF des factures | oui | Un seul téléchargement par facture : les 12 derniers mois au début, quelques-uns par jour, puis chaque nouvelle facture. |
 
 ### Limites
 
@@ -249,8 +264,11 @@ défaut, la dernière facture de chaque point. Un fichier existant n'est jamais 
 - Un abonnement facturé « à échoir » puis repris peut décaler une partie des frais fixes d'un mois sur
   l'autre ; les totaux annuels sont exacts.
 - TotalEnergies retient parfois la liste des points de livraison pendant un temps. L'installation propose
-  alors les points facturés ces 12 derniers mois, et les capteurs de contrat restent inconnus jusqu'à son
-  retour ; les factures et les coûts n'en souffrent pas.
+  alors les points facturés ces 12 derniers mois ; le tarif et la puissance souscrite sont alors lus sur
+  les PDF des factures, les autres capteurs de contrat restent inconnus jusqu'à son retour. Les factures
+  et les coûts n'en souffrent pas.
+- Les PDF des factures sont lus d'après leur mise en page : un changement de modèle de facture peut
+  interrompre cette lecture (les capteurs tirés des PDF cessent alors d'être mis à jour, rien d'autre).
 - L'API est celle de l'espace client : non officielle, non documentée, susceptible de changer.
 
 ### Si TotalEnergies refuse la connexion

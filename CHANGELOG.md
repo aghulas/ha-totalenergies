@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0 — 2026-11-22
+
+- **Invoice PDFs read**, in pure Python (pypdf in layout mode; on 26 real invoices the reading equals
+  the `pdftotext` one the MCP connector uses). One download per invoice, ever: the last 12 months are
+  read a few a day, then each new invoice. Option *Read the invoice PDFs* (on by default).
+- New sensors: **price of one more kWh** excl. VAT (supply, capacity, energy savings certificates,
+  network variable part, excise; per time class as attributes — an invoice billing two periods with
+  two prices is handled), **maximum power reached** over 12 months (electricity: per class, subscribed
+  power, overrun hours), gas **annual reference consumption** (network tariff, profile, zone,
+  conversion factor, offer).
+- When the list of delivery points is withheld, the network tariff, tariff option and subscribed power
+  are taken from the last invoice PDF.
+- A PDF that cannot be read is tried at the next fetches, then left aside; it never fails the fetch.
+
 ## 0.1.0 — 2026-11-22
 
 First release.

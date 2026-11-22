@@ -4,3 +4,4 @@ pytest
 pytest-cov
 pytest-homeassistant-custom-component
 pip-audit
+pypdf==7.1.1

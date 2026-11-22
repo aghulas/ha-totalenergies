@@ -38,15 +38,25 @@ from .api import (
     TotalEnergiesClient,
     TotalEnergiesTemporaryError,
 )
-from .billing import SPREAD_PER_DAY, PointSeries, PointSummary, build_series, summarize
+from .billing import (
+    SPREAD_PER_DAY,
+    PointSeries,
+    PointSummary,
+    build_series,
+    invoice_points,
+    summarize,
+    valid_lines,
+)
 from .const import (
     BLOCKED_ISSUE_AFTER,
     CONF_FETCH_HOUR,
     CONF_HISTORY_YEARS,
     CONF_POINTS,
+    CONF_READ_PDFS,
     CONF_SPREAD,
     DEFAULT_FETCH_HOUR,
     DEFAULT_HISTORY_YEARS,
+    DEFAULT_READ_PDFS,
     DOMAIN,
     EDGE_DAYS,
     INTERRUPTED_RETRY_MINUTES,
@@ -56,8 +66,12 @@ from .const import (
     MAX_JITTER_SECONDS,
     MIN_ATTEMPT_GAP_HOURS,
     PARIS,
+    PDF_DAYS,
+    PDF_MAX_FAILURES,
+    PDF_PER_FETCH,
     REIMPORT_DAYS,
 )
+from .invoice_pdf import InvoiceDetail, read_invoice, summarize_details
 from .statistics import (
     KIND_BILLED_ENERGY,
     KIND_COST_EXCL_VAT,
@@ -108,6 +122,9 @@ class FetchState:
     first_day: dict[str, date] = field(default_factory=dict)  # per point: oldest day imported
     classes: dict[str, list[str]] = field(default_factory=dict)  # per point: time classes seen
     summaries: dict[str, dict[str, Any]] = field(default_factory=dict)  # per point
+    # Invoice PDFs read: invoice number → {"point", "detail"} (private storage, not in diagnostics).
+    pdf_details: dict[str, dict[str, Any]] = field(default_factory=dict)
+    pdf_failures: dict[str, int] = field(default_factory=dict)  # invoice number → attempts
 
     @classmethod
     def from_dict(cls, data: dict[str, Any] | None) -> FetchState:
@@ -128,6 +145,14 @@ class FetchState:
             first_day={p: date.fromisoformat(d) for p, d in (data.get("first_day") or {}).items()},
             classes={p: list(c) for p, c in (data.get("classes") or {}).items()},
             summaries=dict(data.get("summaries") or {}),
+            pdf_details={
+                str(k): v for k, v in (data.get("pdf_details") or {}).items() if isinstance(v, dict)
+            },
+            pdf_failures={
+                str(k): int(v)
+                for k, v in (data.get("pdf_failures") or {}).items()
+                if isinstance(v, int)
+            },
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -150,6 +175,8 @@ class FetchState:
             "first_day": {p: d.isoformat() for p, d in self.first_day.items()},
             "classes": self.classes,
             "summaries": self.summaries,
+            "pdf_details": self.pdf_details,
+            "pdf_failures": self.pdf_failures,
         }
 
 
@@ -235,6 +262,10 @@ class TotalEnergiesCoordinator(DataUpdateCoordinator[TotalEnergiesData]):
     @property
     def _spread(self) -> str:
         return str(self._option(CONF_SPREAD, SPREAD_PER_DAY))
+
+    @property
+    def _read_pdfs(self) -> bool:
+        return bool(self._option(CONF_READ_PDFS, DEFAULT_READ_PDFS))
 
     @callback
     def on_tokens(self, tokens: Tokens) -> None:
@@ -416,6 +447,9 @@ class TotalEnergiesCoordinator(DataUpdateCoordinator[TotalEnergiesData]):
         if backfill:
             self.state.backfilled_years, self.state.spread = depth, method
         summaries = summarize(invoices, lines, sites or [], point_energy, today)
+        if self._read_pdfs:
+            await self._async_read_pdfs(invoices, lines, point_energy, today)
+            summaries = self._with_pdf(summaries)
         if sites is None and self.data is not None:
             for point, summary in summaries.items():
                 previous = self.data.points.get(point)
@@ -429,6 +463,72 @@ class TotalEnergiesCoordinator(DataUpdateCoordinator[TotalEnergiesData]):
             backfill,
         )
         return TotalEnergiesData(fetched_at=dt_util.now(), points=summaries)
+
+    async def _async_read_pdfs(
+        self,
+        invoices: list[Any],
+        lines: list[Any],
+        point_energy: dict[str, str],
+        today: date,
+    ) -> None:
+        """Read the PDFs of the last year's invoices not read yet, a few per fetch.
+
+        One download per invoice, ever (the result is kept); a PDF that cannot be read is tried
+        again at the next fetches, then left aside. A temporary error stops the reading until the
+        next fetch; an auth refusal or a DataDome block is handled like any other call.
+        """
+        owner = invoice_points(invoices, valid_lines(lines, point_energy, invoices), point_energy)
+        since = today - timedelta(days=PDF_DAYS)
+        wanted = sorted(
+            (
+                i
+                for i in invoices
+                if i.number and not i.cancelled and i.date and i.date > since and i.number in owner
+            ),
+            key=lambda i: i.date,
+            reverse=True,
+        )
+        keep = {i.number for i in wanted}
+        st = self.state
+        st.pdf_details = {n: d for n, d in st.pdf_details.items() if n in keep}
+        st.pdf_failures = {n: c for n, c in st.pdf_failures.items() if n in keep}
+        todo = [
+            i
+            for i in wanted
+            if i.number not in st.pdf_details
+            and st.pdf_failures.get(i.number, 0) < PDF_MAX_FAILURES
+        ][:PDF_PER_FETCH]
+        for inv in todo:
+            number = inv.number
+            try:
+                data = await self.client.async_download_invoice(number)
+            except (TotalEnergiesAuthError, TotalEnergiesBlockedError):
+                raise
+            except TotalEnergiesTemporaryError as err:
+                st.pdf_failures[number] = st.pdf_failures.get(number, 0) + 1
+                _LOGGER.warning(
+                    "TotalEnergies invoice PDF download failed (%s): next fetch",
+                    _LONG_NUMBER.sub("<n>", str(err)),
+                )
+                break
+            try:
+                detail = await self.hass.async_add_executor_job(read_invoice, data)
+            except Exception as err:  # noqa: BLE001 — a PDF we cannot read must not fail the fetch
+                st.pdf_failures[number] = st.pdf_failures.get(number, 0) + 1
+                _LOGGER.warning("TotalEnergies invoice PDF not readable (%s)", type(err).__name__)
+                continue
+            st.pdf_details[number] = {"point": owner[number], "detail": detail.as_dict()}
+
+    def _with_pdf(self, summaries: dict[str, PointSummary]) -> dict[str, PointSummary]:
+        by_point: dict[str, list[InvoiceDetail]] = {}
+        for record in self.state.pdf_details.values():
+            detail = InvoiceDetail.from_dict(record.get("detail"))
+            point = record.get("point")
+            if detail is not None and point in summaries:
+                by_point.setdefault(point, []).append(detail)
+        return {
+            p: replace(s, pdf=summarize_details(by_point.get(p, []))) for p, s in summaries.items()
+        }
 
     async def _async_import(
         self, point: str, s: PointSeries, since: date | None, backfill: bool

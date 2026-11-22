@@ -44,7 +44,8 @@
           "history_years": "History to import (raising it imports the older invoices)",
           "fetch_hour": "Daily fetch hour (a random delay of up to 30 min is added)",
           "spread": "Where billed amounts are placed",
-          "pdf_folder": "Folder for invoice PDFs (empty: download disabled), e.g. /media/totalenergies"
+          "pdf_folder": "Folder for invoice PDFs (empty: download disabled), e.g. /media/totalenergies",
+          "read_pdfs": "Read the invoice PDFs (unit prices, power reached, gas reference consumption)"
         }
       }
     }
@@ -108,6 +109,15 @@
       },
       "subscribed_power": {
         "name": "Subscribed power"
+      },
+      "marginal_price": {
+        "name": "Price of one more kWh"
+      },
+      "max_reached_power": {
+        "name": "Maximum power reached"
+      },
+      "reference_consumption": {
+        "name": "Annual reference consumption"
       }
     },
     "binary_sensor": {

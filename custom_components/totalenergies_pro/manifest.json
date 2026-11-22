@@ -12,6 +12,8 @@
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/aghulas/ha-totalenergies/issues",
-  "requirements": [],
-  "version": "0.1.0"
+  "requirements": [
+    "pypdf==7.1.1"
+  ],
+  "version": "0.2.0"
 }

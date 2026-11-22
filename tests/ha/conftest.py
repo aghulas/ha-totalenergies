@@ -29,5 +29,10 @@ async def te(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -> AsyncIterat
     freezer.move_to(NOW)
     client = FakeClient()
     client.fill(date(2024, 1, 1), TODAY)
-    with patch("custom_components.totalenergies_pro.TotalEnergiesClient", side_effect=client.build):
+    with (
+        patch("custom_components.totalenergies_pro.TotalEnergiesClient", side_effect=client.build),
+        patch(
+            "custom_components.totalenergies_pro.coordinator.read_invoice", side_effect=client.read
+        ),
+    ):
         yield client

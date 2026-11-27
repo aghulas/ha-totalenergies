@@ -1,6 +1,9 @@
 {
   "domain": "totalenergies_pro",
   "name": "TotalEnergies Pro",
+  "categories": [
+    "energy.meters_monitoring"
+  ],
   "codeowners": [
     "@aghulas"
   ],
@@ -15,5 +18,5 @@
   "requirements": [
     "pypdf==7.1.1"
   ],
-  "version": "0.2.3"
+  "version": "0.2.4"
 }

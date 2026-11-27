@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3 — 2026-11-27
+
+- Ready for the HACS / Marketplace catalogue: `hacs.json` declares the country (France), the HACS
+  validation runs on every push without any ignored check. No change to the integration itself.
+
 ## 0.2.2 — 2026-11-22
 
 - Electricity network tariff taken from the invoice PDF when the list of delivery points is withheld:

@@ -2,8 +2,8 @@
 
 ## 0.2.3 — 2026-11-27
 
-- Prepared for the HACS / Marketplace catalogue: `hacs.json` declares the country (France). No change
-  to the integration itself.
+- Ready for the HACS / Marketplace catalogue: `hacs.json` declares the country (France), the HACS
+  validation runs on every push without any ignored check. No change to the integration itself.
 
 ## 0.2.2 — 2026-11-22
 

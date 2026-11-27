@@ -14,8 +14,6 @@ jobs:
       - uses: home-assistant/actions/hassfest@master
 
   hacs:
-    # The HACS action only validates public repositories; this one is private until the release.
-    if: ${{ github.event.repository.private == false }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

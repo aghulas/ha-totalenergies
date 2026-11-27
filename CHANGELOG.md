@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.4 — 2026-11-27
+
+- The manifest declares its category (`energy.meters_monitoring`), which the HACS validation asked
+  for. No change to the integration itself.
+
 ## 0.2.3 — 2026-11-27
 
 - Ready for the HACS / Marketplace catalogue: `hacs.json` declares the country (France), the HACS

@@ -11,8 +11,8 @@ electricity, GRDF for gas) but know nothing about money. TotalEnergies only know
 this integration does not replace them: it puts the cost of each invoice on the days it bills, and the
 Energy dashboard shows those costs next to the distributor's consumption.
 
-**Status: 0.2.0.** 0.1.0 was the first release. It runs on one real Home Assistant since November 2026: three years of
-invoices imported, totals checked to the cent against TotalEnergies.
+**Status.** It runs on one real Home Assistant since November 2026: three years of invoices imported,
+totals checked to the cent against TotalEnergies. Versions: see the [changelog](CHANGELOG.md).
 
 ## Why this design
 
@@ -32,7 +32,8 @@ been provoked on a real account.
 
 ## Installation
 
-Requires Home Assistant 2025.11 or later.
+Requires Home Assistant 2025.11 or later (the statistics use the unit class introduced in that
+version). The icon shipped with the integration is shown from Home Assistant 2026.3.
 
 **Home Assistant 2026.11 or later — Marketplace:** Settings → Marketplace → **Add from link**, enter
 `aghulas/ha-totalenergies`, then open the repository and select **Install**.
@@ -160,8 +161,8 @@ GRDF pour le gaz) mais ne connaissent pas les montants. TotalEnergies ne connaî
 facturation : l'intégration ne les remplace donc pas, elle place le coût de chaque facture sur les jours
 qu'elle facture, et le tableau de bord Énergie l'affiche à côté de la consommation du distributeur.
 
-**État : 0.2.0.** La 0.1.0 a été la première version publiée. Elle tourne sur un vrai Home Assistant depuis novembre 2026 :
-trois ans de factures importés, totaux recoupés au centime avec TotalEnergies.
+**État.** Elle tourne sur un vrai Home Assistant depuis novembre 2026 : trois ans de factures importés,
+totaux recoupés au centime avec TotalEnergies. Versions : voir le [journal des versions](CHANGELOG.md).
 
 ### Pourquoi cette conception
 
@@ -182,7 +183,8 @@ Ce comportement est couvert par des tests automatiques sur un faux serveur ; il 
 
 ### Installation
 
-Home Assistant 2025.11 ou plus récent.
+Home Assistant 2025.11 ou plus récent (les statistiques utilisent la classe d'unité apparue dans cette
+version). L'icône fournie avec l'intégration s'affiche à partir de Home Assistant 2026.3.
 
 **Home Assistant 2026.11 ou plus récent, par le Marketplace :** Paramètres → Marketplace → **Add from
 link**, saisir `aghulas/ha-totalenergies`, puis ouvrir le dépôt et choisir **Install**.
